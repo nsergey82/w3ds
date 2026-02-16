@@ -103,7 +103,9 @@ class VaultIO:
         mutation = gql(
             """
             mutation M($mid: ID!) {
-                removeMetaEnvelope(id: $mid)
+                removeMetaEnvelope(id: $mid) {
+                    deletedId
+                }
             }
             """
         )
@@ -111,30 +113,29 @@ class VaultIO:
         try:
             rc = client.execute(mutation)
         except transport.exceptions.TransportQueryError as e:
-            print("error deleting:", e)
-            return None
+            raise RuntimeError("error deleting")
+        if "removeMetaEnvelope" in rc:
+            return rc["removeMetaEnvelope"]["deletedId"]
         return rc.get("errors", None)
 
     def store_envelopes(self, metaontology: str, envelopes: Dict[str, str]):
-        # TODO: use variables instead of injection fro payload
         client = _start_client(self.ename, self.token)
-        payload = ",".join([_build_envelope(p) for p in envelopes.items()])
         mutation = gql(
-            f"""
-                mutation M($ontology: String!){{
-                createMetaEnvelope(input: {{
+            """
+                mutation M($ontology: String!, $payload: JSON!){
+                createMetaEnvelope(input: {
                         ontology: $ontology,
-                        payload: {{
-                            {payload}
-                        }},
-                        acl: ["*"]}}) {{
-                    metaEnvelope {{
+                        payload: $payload,
+                        acl: ["*"]}) {
+                    metaEnvelope {
                         id
-                    }}
-                }}
-                }}
+                    }
+                }
+                }
             """
         )
-        mutation.variable_values = {"ontology": metaontology}
+        mutation.variable_values = {"ontology": metaontology, "payload": envelopes}
         rc = client.execute(mutation)
-        return rc.get("errors", None)
+        if "createMetaEnvelope" in rc:
+            return rc["createMetaEnvelope"]["metaEnvelope"]["id"]
+        raise RuntimeError(rc.get("errors", "storing failed"))
