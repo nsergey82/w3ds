@@ -17,10 +17,6 @@ def _start_client(ename: str, token: str) -> Client:
     return Client(transport=transport)
 
 
-def _build_envelope(envelope):
-    return f'''{envelope[0]}: "{envelope[1]}"'''
-
-
 def envelope_to_py(metaenvelope: Dict):
     envelopes = metaenvelope.get("envelopes", [])
     return {en["ontology"]: en["value"] for en in envelopes}
