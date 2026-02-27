@@ -10,7 +10,8 @@ from utils import VaultIO, envelope_to_py
 
 class TestEnvelopes(unittest.TestCase):
     def setUp(self):
-        ename = os.getenv("ENAME", "@82f7a77a-f03a-52aa-88fc-1b1e488ad498")
+        # at the moment it seems you can write to non-existing evaults
+        ename = "@testename"  # os.getenv("ENAME")
         token = os.getenv("PP_JWT_TOKEN", "secret")
         self.vio = VaultIO(token, ename)
         self.ontology = "TEST_ONTOLOGY" + str(os.getpid())
